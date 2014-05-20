@@ -1,0 +1,40 @@
+#!/bin/bash
+# Developed by Melody Chau 2014
+
+
+
+
+################### TESTER Inputs  o################
+
+#
+#       sessionID='0002-diamproxy.gy.BPGX1.bell.ca;195020764;33832;537b679e-2802';
+#       inputfile='UL_20140520_CTE_FW02_PGW01_ECS_Integration_API.log.csv';
+#       outputfile='asdf';
+#
+########################################################
+
+
+
+#sed -n "/Session-Id(STRING) -> $sessionID/ { N; /\(Origin-Host(STRING) ->\)\|\(Result-Code(INTEGER)\)/ { h; :a; n; H; /INSERT/! ba; g; p } }" $inputfile  ;
+#sed -n "/ession-Id(STRING) version 1 -> $sessionID/ {p; N; /\(Origin-Host\|subscriber(AVS) version 1\)/ { h; :a; n; H; /INSERT/! ba; g;p } }" $inputfile ;
+
+#sed -n '/Session-Id(STRING) version 1 -> 0002-diamproxy.gy.BPGX1.bell.ca;195020764;33832;537b679e-2802/ { N; /\(Origin-Host\|Result-Code\)/ { h; :a; n; H; /INSERT/! ba; g;p } }' UL_20140520_CTE_FW02_PGW01_ECS_Integration_API.log.csv;
+echo -e "Melody Chau 2014 :)  \n";
+echo   'sessionID';
+read -r sessionID;
+echo -e "your session is $sessionID \n";
+
+echo 'inputfile   ( the log file you want parsed) ';
+read -r inputfile;
+echo -e "your inputfile is $inputfile\n";
+
+echo 'outputfile   (where do you want to store this data) ';
+read -r outputfile;
+echo -e "your outputfile is $outputfile \n";
+
+
+
+
+sed -n "/(STRING) version 1 -> $sessionID/ { N; /\(Origin-Host\|subscriber\)/ { h; :a; n; H; /INSERT/! ba; g;p } }" $inputfile > $outputfile ;
+
+
