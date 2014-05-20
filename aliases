@@ -1,0 +1,17 @@
+alias dev='strst=UL_;strend=_CTE_FW02_PGW01_ECS_3gppGy_GyDeviceAdapter.log.csv;day=$(date "+%Y%m%d");echo $strst$day$strend; less $strst$day$strend'
+alias int='strst=UL_;strend=_CTE_FW02_PGW01_ECS_Integration_API.log.csv;day=$(date "+%Y%m%d");echo $strst$day$strend; less $strst$day$strend'
+alias sssh='~/ss_dump.sh'
+alias ssd='less ss_dump'
+alias tdr='cd /prod/fwhome/TDR/output'
+alias tdrd='cd /prod/fwhome/TDR/output/done'
+alias tmp='cd /tmp'
+alias udrpgw='cd /prod/fwhome/UDR_PGW/output'
+alias me='cd /export/home/mchau'
+shopt -s nocaseglob
+
+
+
+--------------ops -------------------
+alias dev='less $(ls *$(date "+%Y%m%d")*Dev*PGW01*)'
+alias int='less $(ls *$(date "+%Y%m%d")*Int*PGW01*)'
+shopt -s nocaseglob
