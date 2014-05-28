@@ -24,6 +24,11 @@ echo   'sessionID';
 read -r sessionID;
 echo -e "your session is $sessionID \n";
 
+
+echo 'Log Type  (enter: int or dev)   [int=integration logs, dev=device adapter] ';
+read -r logtype;
+echo -e "you logtype is $logtype\n";
+
 echo 'inputfile   ( the log file you want parsed) ';
 read -r inputfile;
 echo -e "your inputfile is $inputfile\n";
@@ -34,7 +39,11 @@ echo -e "your outputfile is $outputfile \n";
 
 
 
-
-sed -n "/(STRING) version 1 -> $sessionID/ { N; /\(Origin-Host\|subscriber\)/ { h; :a; n; H; /INSERT/! ba; g;p } }" $inputfile > $outputfile ;
-
-
+if [ "$logtype" == 'int' ]; then
+        echo 'Reading Integration Log';
+        sed -n "/(STRING) version 1 -> $sessionID/ { N; /\(Origin-Host\|subscriber\)/ { h; :a; n; H; /INSERT/! ba; g;p } }" $inputfile > $outputfile ;
+elif [ "$logtype" == 'dev' ]; then
+        echo 'Reading Device Adapter Log';
+        sed -n "/Session-Id(STRING) -> $sessionID/ { N; /\(Origin-Host(STRING) ->\)\|\(Result-Code(INTEGER)\)/ { h; :a; n; H; /INSERT/! ba; g; p } }" $inputfile > $outputfile;
+fi
+ #sed -n "/(STRING) version 1 -> $sessionID/ { N; /\(Origin-Host\|subscriber\)/ { h; :a; n; H; /INSERT/! ba; g;p } }" $inputfile > $outputfile ;
