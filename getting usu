@@ -1,0 +1,258 @@
+#!/bin/bash
+# Developed by Melody Chau 2014
+#
+#0002-diamproxy.gy.BPGX1.bell.ca;220026104;370477;5357cc0e-2d02
+number=$(sed -n '{:z /Session-Id(STRING) -> 0001-diamproxy.gy.BPGX1.bell.ca;125020631;72730;539b085b-1a02/ { n; /\(Origin-Host(STRING) ->\)/ { :y; n; /CC-Request-Number/! by; h;  :a; n; /User-Equipment/ bz; /CC-Total-Octets/! ba;  n; H; n; H; n; n; H; g; p } }}' testlog); 
+
+echo "$number";
+
+dat_ccr_rng=$number;
+echo \n;
+echo ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo \n\n\n;
+#rm all ines with rating group in the string
+#numbersmall=$(echo "$number" | sed '/Rating-Group/d');
+
+#echo "$numbersmall";
+
+# find and print first occurence of rating group
+while !( test -z "$number");do
+
+	echo "number is =  not empty"; 
+			rategrp=$(echo "$number" |  sed -n '/Rating-Group/{p;q;}');
+			echo "$rategrp";
+
+			#***************** extract the rating group number out ******************
+
+			rategrpNum=$(echo "$rategrp" | sed 's/[^0-9]//g');
+			echo "$rategrpNum";
+
+			rategrptmp="Rating-Group(INTEGER) -> ";
+			srchRt="$rategrptmp$rategrpNum";
+			 
+			echo "$srchRt ....this is srchRt";
+
+			#remove all lines with searchRt
+			#echo "$number" | sed "/$srchRt/d"; 
+
+
+			# **************  print only the octets for a certain rating group ---- format: /ccr num/ input output oct/ rg/ *********** 
+
+						# -n in sed to suppress automatic printing of pattern space!!!! 
+						# this works ---- > sed -n '{h;n;H;n;H;n;H;g;/Rating-Group(INTEGER) -> 210/! ba; p; :a; d;x} '
+			rategrp_usg_tmp=$(echo "$number" |   sed -n "{h;n;H;n;H;n;H;g;/$srchRt/! ba; p; :a; d;x}");
+
+			echo "$rategrp_usg_tmp";
+			echo ' ' ;
+			echo ' ';
+			echo end rategrp_usg_tmp;
+
+			#********* strip down to only the octet numbers / input/output/ ************
+
+						#remove all lines with searchRt
+			tmp=$(echo "$rategrp_usg_tmp" | sed "/$srchRt/d");
+			#echo "$tmp";
+			echo srchRt removed :D;
+						#remove all lines with CC-Request-Number
+			tmp=$(echo "$tmp" | sed '/CC-Request-Number/d');
+			#echo "$tmp";
+			echo ' CCRs removed ';
+
+			#****************** processing to add up OUTPUT octets *******************
+
+						#remove all lines that say input
+				oct=$(echo "$tmp" | sed "/CC-Input-Octets/d");
+				#echo "$oct";
+				echo " CC input removed ";
+
+				oct=$(echo "$oct" | sed 's/[^0-9]//g');
+				echo "$oct";
+				echo " just output  octets now ";
+
+				
+
+				#add each line up
+				nwsum=0;prvline=0;
+				while read line;
+					do
+			  
+					#echo "nwsum = line + pvline = $line + $prvline";
+					nwsum=$(($line+$prvline));
+					prvline=$nwsum; 
+					#echo  "nwsum = $nwsum";	
+
+					done <<< "$oct";
+					outoct=$nwsum;		
+				echo -e "\n
+						############################################	
+
+						output octet total is $nwsum for $rategrpNum
+
+						############################################";
+				
+			#****************** processing to add up INPUT octets *******************
+
+									#remove all lines that say output
+					oct=$(echo "$tmp" | sed "/CC-Output-Octets/d");
+					#echo "$oct";
+					echo " CC output removed ";
+
+					oct=$(echo "$oct" | sed 's/[^0-9]//g');
+					echo "$oct";
+					echo " just input  octets now ";
+
+
+
+					#add each line up
+					nwsum=0;prvline=0;
+					while read line;
+							do
+
+							#echo "nwsum = line + pvline = $line + $prvline";
+							nwsum=$(($line+$prvline));
+							prvline=$nwsum;
+							#echo  "nwsum = $nwsum";
+
+							done <<< "$oct";
+							inoct=$nwsum
+							totoct=$(($outoct+$inoct));
+
+					echo -e "\n
+						############################################	
+
+						input octet total is $nwsum for $rategrpNum
+
+						  total octets is $totoct for $rategrpNum
+
+						############################################	";
+
+
+			#************** proceeding to delete all data of  rategrpNum  from $number **********************8
+			number=$(echo "$number" |   sed -n "{h;n;H;n;H;n;H;g;/$srchRt/! ba; d;x; :a; p}");
+
+			echo "$number"; 
+			#echo " not 210";
+
+					#extract rategrp
+			# rategrp=$(echo "$number" |  sed -n '/Rating-Group/{p;q;}');
+			#rategrpNum=$(echo "$rategrp" | sed 's/[^0-9]//g');
+			#srchRt="$rategrptmp$rategrpNum";
+			#echo "$srchRt ....this is srchRt";
+
+			#number=$(echo "$number" |   sed -n "{h;n;H;n;H;n;H;g;/$srchRt/! ba; d;x; :a; p}");
+
+			#echo "$number .......";
+			#number='asdf';
+
+				#number='';
+
+done 
+	echo "number is =  $number,  empty, bye now - Mel"; 
+
+#************* counting CCR usage between two specific CCR messages *******************************8# 
+
+
+	#case one:  CCR that starts range does not exist in data
+	#case two: CCR that ends range DNE in data  but the data has a ccr greater than requested CCR ( in that case add up until you hit the CCR (include it) that is less than but closest to desired CCR)
+	#case three: CCR in start and end is in data 
+	#case four: CCR is greather than the biggest CCR in Data ( take everything from CCR start till the end of data ) 
+	#PLAN: copy the ccr' octets, append to a big string. If the ccr falls between ccrStart adn ccrEnd  then copy its octets  and keep appending it to a string. Then strip it of CCR lines and reduce to just numbers and add em up. 
+
+	ccrSt=5;
+	ccrEn=10;
+
+	echo "$dat_ccr_rng";
+	echo "moving on";
+	#booleans 1 = true, 0 = false
+	ccrStExist=0;  
+	ccrEnExist=0;
+
+	#search for ccrSt
+	tmp=$(echo "$dat_ccr_rng" |  sed -n "/CC-Request-Number(INTEGER) -> $ccrSt/{p;q;}");
+	echo "$tmp";
+
+		#check if this is the ccr we want  ie what if we wanted CCR 2 but came back with CCR 20 
+		if [ "CC-Request-Number(INTEGER) -> $ccrSt" == "$tmp" ];
+			then
+			echo 'yay equals';
+			ccrStExist=1; 
+		fi
+
+	#search for ccrEn
+
+        tmp=$(echo "$dat_ccr_rng" |  sed -n "/CC-Request-Number(INTEGER) -> $ccrEn/{p;q;}");
+        echo "$tmp";
+
+                #check if this is the ccr we want  ie what if we wanted CCR 2 but came back with CCR 20
+                if [ "CC-Request-Number(INTEGER) -> $ccrEn" == "$tmp" ];
+                        then
+                        echo 'yay equals';
+                        ccrEnExist=1;
+                fi
+
+
+        ccrStExist=0;
+        #ccrEnExist=0;
+
+        #ccrStExist=1;
+        ccrEnExist=1;
+
+	ccrSt=5;
+
+ 	if ( (( $ccrStExist == 1 )) &&  (( $ccrEnExist == 1 )) ) ; then
+		echo " st and end exist";
+
+	elif ( (( $ccrStExist == 0 )) &&  (( $ccrEnExist == 1 )) ) ; then
+		 echo " st not there but  end exist";
+
+		#extract first ccr in logs   ---- ccrSt_Givn
+
+		tmp=$(echo "$dat_ccr_rng" |  sed -n "/CC-Request-Number(INTEGER)/{p;q;}");
+		ccrSt_Givn=$(echo "$tmp" | sed  's/[^0-9]*//g');
+		echo " first ccr  is $tmp, and num is $ccrSt_Givn "
+
+		#is ccrSt <  the first ccr  in  given logs -- T -> ccrSt is assigned the first ccr in given logs 
+		
+		if  (( $ccrSt < $ccrSt_Givn )); then
+			echo " ccrSt is lt ccrSt Givn";  
+			ccrSt=$ccrSt_Givn;
+		else  # ccrSt > ccrSt_Givn  --> need to find the first ccr-u that is greater  than ccrSt
+				 	
+				cont=1; # 1 continue looping , 0 escape!
+	
+                                	 while read line && cont;
+                                                        do
+							
+							#ok read it line by line and see  if the line says what ccr number it is if it does extract	
+                                                        
+                                                        if [[ "$line"  == *"CC-Request-Number(INTEGER)"* ]]; then 
+								num=$(echo "$line" | sed  's/[^0-9]*//g');
+								echo " num is $num ccrSt is $ccrSt";
+
+								if (( $num == ccrSt )); then
+									cont=0;
+								fi
+
+							fi	
+
+                                                        done <<< "$dat_ccr_rng";
+                                                        
+			
+			
+		fi
+
+
+	fi
+
+
+	substring="CC-Request-Number(INTEGER) -> ";
+	my_string="CC-Request-Number(INTEGER) -> 5";
+
+
+
+
+	#is  substring  part of my_string? if true echo yes
+	[[ "$my_string"  == *"$substring"* ]] && echo yes || echo no ;  
+
+		
+	
