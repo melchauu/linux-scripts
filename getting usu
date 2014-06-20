@@ -153,7 +153,7 @@ done
 
 
 	#case one:  CCR that starts range does not exist in data
-	#case two: CCR that ends range DNE in data  but the data has a ccr greater than requested CCR ( in that case add up until you hit the CCR (include it) that is less than but closest to desired CCR)
+	#case two: CCR that ends range DNE in data  but the data has a ccr greater than requested CCR ( in that case add up until you hit the CCR (include it) that is greater than but closest to desired CCR)
 	#case three: CCR in start and end is in data 
 	#case four: CCR is greather than the biggest CCR in Data ( take everything from CCR start till the end of data ) 
 	#PLAN: copy the ccr' octets, append to a big string. If the ccr falls between ccrStart adn ccrEnd  then copy its octets  and keep appending it to a string. Then strip it of CCR lines and reduce to just numbers and add em up. 
@@ -195,14 +195,15 @@ done
         #ccrEnExist=0;
 
         #ccrStExist=1;
-        ccrEnExist=1;
+        ccrEnExist=0;
 
-	ccrSt=5;
+	ccrSt=4;
+	ccrEn=30;
 
  	if ( (( $ccrStExist == 1 )) &&  (( $ccrEnExist == 1 )) ) ; then
 		echo " st and end exist";
 
-	elif ( (( $ccrStExist == 0 )) &&  (( $ccrEnExist == 1 )) ) ; then
+	elif  (( $ccrStExist == 0 ))  ; then
 		 echo " st not there but  end exist";
 
 		#extract first ccr in logs   ---- ccrSt_Givn
@@ -211,16 +212,16 @@ done
 		ccrSt_Givn=$(echo "$tmp" | sed  's/[^0-9]*//g');
 		echo " first ccr  is $tmp, and num is $ccrSt_Givn "
 
-		#is ccrSt <  the first ccr  in  given logs -- T -> ccrSt is assigned the first ccr in given logs 
+		#is ccrSt <  the first ccr  in  given logs                       -- T -> ccrSt is assigned the first ccr in given logs 
 		
 		if  (( $ccrSt < $ccrSt_Givn )); then
-			echo " ccrSt is lt ccrSt Givn";  
+			echo " ccrSt is lt ccrSt Givn, new ccrSt = ccrSt_Given";  
 			ccrSt=$ccrSt_Givn;
-		else  # ccrSt > ccrSt_Givn  --> need to find the first ccr-u that is greater  than ccrSt
+		else  # ccrSt > ccrSt_Givn                                  --> need to find the first ccr-u that is greater  than ccrSt
 				 	
 				cont=1; # 1 continue looping , 0 escape!
 	
-                                	 while read line && cont;
+                                	 while read line && (( cont == 1 ));
                                                         do
 							
 							#ok read it line by line and see  if the line says what ccr number it is if it does extract	
@@ -229,17 +230,33 @@ done
 								num=$(echo "$line" | sed  's/[^0-9]*//g');
 								echo " num is $num ccrSt is $ccrSt";
 
-								if (( $num == ccrSt )); then
+								if (( $num > $ccrSt )); then
 									cont=0;
+									ccrSt=$num;
+									echo " this is new ccrSt $ccrSt = first ccr u > ccrSt.  original ccrSt > ccrSt_Given. ";
 								fi
 
 							fi	
 
                                                         done <<< "$dat_ccr_rng";
-                                                        
-			
-			
+                      
+		
 		fi
+
+               #check ccrEn
+
+               if (( $ccrEnExist == 0 )); then
+
+                # is ccrEn greater than biggest ccr in the data?
+
+
+                         #off to find biggest ccr
+               		 tmp=$(echo "$dat_ccr_rng" |sed -n '/CC-Request-Number(INTEGER)/{h;b};${x;p}');
+                         echo $tmp;
+               fi
+
+
+
 
 
 	fi
