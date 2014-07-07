@@ -204,7 +204,7 @@ done
 		echo " st and end exist";
 
 	elif  (( $ccrStExist == 0 ))  ; then
-		 echo " st not there but  end exist";
+		 echo " st not there ";
 
 		#extract first ccr in logs   ---- ccrSt_Givn
 
@@ -251,8 +251,52 @@ done
 
 
                          #off to find biggest ccr
+
                		 tmp=$(echo "$dat_ccr_rng" |sed -n '/CC-Request-Number(INTEGER)/{h;b};${x;p}');
-                         echo $tmp;
+                         ccrEn_Givn=$(echo "$tmp" | sed  's/[^0-9]*//g');	
+			 echo " ccrEn = $tmp and num is $ccrEn_Givn ";
+
+			 # is ccrEn >  ccrEn_Givn ( the last ccr given in the logs ) 	---- T ->  ccrEn is the last ccr in the logs 
+	
+			if (( $ccrEn > $ccrEn_Givn )); then 
+				 ccrEn=$ccrEn_Givn;
+
+			else
+			
+			# ccrEn < ccrEn_givn  ---- T -> find the first ccr u that is greater than ccrEn and take the ccr-u that is right before it (it being the first ccr gt ccrEn)	 	              
+			
+                                cont=1; # 1 continue looping , 0 escape!
+                                                        ccrPrev=0;
+                                                        ccrCur=0;
+
+                                         while read line && (( cont == 1 ));
+                                                        do
+
+
+	
+                                                        #ok read it line by line and see  if the line says what ccr number it is if it does extract
+
+                                                        if [[ "$line"  == *"CC-Request-Number(INTEGER)"* ]]; then
+                                                                num=$(echo "$line" | sed  's/[^0-9]*//g');
+                                                                echo " num is $num ccrSt is $ccrEn";
+								ccrPrev=$ccrCur;
+								ccrCur=$num;	
+									
+                                                                if (( $num >  $ccrSt )); then
+                                                                        cont=0;
+                                                                        ccrEn=$ccrPrev;
+                                                                        echo " this is new ccrEn $ccrEn = closest ccru thats lt ccrEn.  ";
+                                                                fi
+
+                                                        fi
+
+                                                        done <<< "$dat_ccr_rng";
+
+			fi	
+
+	
+	
+
                fi
 
 
